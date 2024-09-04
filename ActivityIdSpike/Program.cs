@@ -7,95 +7,39 @@ namespace ActivityIdSpike
     internal class Program
     {
         static async Task Main(string[] args)
-        { 
+        {
 
             MyEventListener listener = new MyEventListener();
             Guid id = Guid.NewGuid();
-            //EventSource.SetCurrentThreadActivityId(id);
-    //        Trace.CorrelationManager.ActivityId = id;
-   //            MyEventSource.Log.FooStart("starting");
+            
+            EventSource.SetCurrentThreadActivityId(id);
 
+            MyEventSource.Log.FooStart("starting ...");
+            MyEventSource.Log.Message1($"Message1: id: {id}");
             PrintWithHeader("Main started");
-
-
-
 
             await Task.Delay(1000);
             PrintWithHeader("AfterListerStarted");
-          //  Trace.CorrelationManager.ActivityId = Guid.NewGuid();
-//            var task1 = NoPropagateActivityID(1);
-            var task1 = PropagateByCorrelationManager(1);
-//            var task2 = NoPropagateActivityID(2);
-//            var task3 = NoPropagateActivityID(3);
-            var task3 = PropagateByCorrelationManager(3);
- //           var task4 = NoPropagateActivityID(4);
-            //await Task.WhenAll(task1, task2, task3, task4);
+            var task1 = PropagateActivtyIdWithEventSource(1);
+            var task3 = PropagateActivtyIdWithEventSource(2);
             await Task.WhenAll(task1, task3);
             PrintWithHeader("Main finished");
-     //       MyEventSource.Log.FooStop("Stopping");
-        }
-
-
-        static async Task PropagateActivityID(int tid)
-        {
-            PrintWithHeader($"[{tid}] PropagateActivityID started");
-            Guid id = Guid.NewGuid();
-            // EventSource.SetCurrentThreadActivityId(id);
-            Trace.CorrelationManager.ActivityId = id;
-
-            PrintWithHeader($"[{tid}] PropagateActivityID updatedActivityId");
-
-            MyEventSource.Log.FooStart("starting");
-            PrintWithHeader($"[{tid}] PropagateActivityID After starting propagation.");
-            await Task.Yield();
-            PrintWithHeader($"[{tid}] PropagateActivityID After Yield");
-
-            await RandomWait($"[{tid}] PropagateActivityID");
-            PrintWithHeader($"[{tid}] PropagateActivityID After RandomWait");
-
-            await RandomWaitWithConfigureAwaitFalse($"[{tid}] PropagateActivityID");
-            PrintWithHeader($"[{tid}] PropagateActivityID After RandomWaitWithConfigureAwaitFalse");
-
             MyEventSource.Log.FooStop("Stopping");
-           // Debug.Assert(EventSource.CurrentThreadActivityId == id);
-        }
 
-        static async Task NoPropagateActivityID(int tid)
-        {
-            PrintWithHeader($"[{tid}] NoPropagateActivityID started");
-            Guid id = Guid.NewGuid();
-            //EventSource.SetCurrentThreadActivityId(id);
-            Trace.CorrelationManager.ActivityId = id;
-            PrintWithHeader($"[{tid}] NoPropagateActivityID updatedActivityId");
+        }
+       static async Task PropagateActivtyIdWithEventSource(int tid)
+       {
+            MyEventSource.Log.Message1("Message1");
+            PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource started");
+         //   MyEventSource.Log.FooStart($"Child {tid} started");
+            MyEventSource.Log.Message1("Message1");
+            PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource After starting propagation.");
             await Task.Yield();
-            PrintWithHeader($"[{tid}] NoPropagateActivityID After Yield");
-            await RandomWait($"[{tid}] NoPropagateActivityID");
-            PrintWithHeader($"[{tid}] NoPropagateActivityID After RandomWait");
+            MyEventSource.Log.Message1("Message1");
+            PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource After Yield");
+          //  MyEventSource.Log.FooStop($"Child {tid} stopped");   
+       }
 
-            await RandomWaitWithConfigureAwaitFalse($"[{tid}] NoPropagateActivityID");
-            PrintWithHeader($"[{tid}] NoPropagateActivityID After RandomWaitWithConfigureAwaitFalse");
-
-            Debug.Assert(EventSource.CurrentThreadActivityId != id);
-        }
-
-        static async Task PropagateByCorrelationManager(int tid)
-        {
-            Guid id = Guid.NewGuid();
-            Trace.CorrelationManager.ActivityId = id;
-            PrintWithHeader($"[{tid}] PropagateByCorrelationManager started");
-
-            PrintWithHeader($"[{tid}] PropagateByCorrelationManager updatedActivityId");
-            await Task.Yield();
-            PrintWithHeader($"[{tid}] PropagateByCorrelationManager After Yield");
-            await RandomWait($"[{tid}] PropagateByCorrelationManager", false, false);
-            PrintWithHeader($"[{tid}] PropagateByCorrelationManager After RandomWait");
-
-            await RandomWaitWithConfigureAwaitFalse($"[{tid}] PropagateByCorrelationManager", false);
-            PrintWithHeader($"[{tid}] PropagateByCorrelationManager After RandomWaitWithConfigureAwaitFalse");
-
-            await RandomWait($"[{tid}] PropagateByCorrelationManager user false", false, false);
-
-        }
 
 
         static async Task RandomWait(string parent, bool restoreActivityId = false, bool generateNewIdAndSetToThread = false)
@@ -135,8 +79,7 @@ namespace ActivityIdSpike
 
         static void PrintWithHeader(string message)
         {
-//            var log = $"[{DateTime.Now:HH:mm:ss.fff}] Tid: [{Thread.CurrentThread.ManagedThreadId}] ActivityId: [{Trace.CorrelationManager.ActivityId}] ActivitId ES: [{EventSource.CurrentThreadActivityId}] {message}";
-            var log = $"[{DateTime.Now:HH:mm:ss.fff}] Tid: [{Thread.CurrentThread.ManagedThreadId}] CorrelationManager.ActivityId: [{Trace.CorrelationManager.ActivityId}] {message}";
+            var log = $"[{DateTime.Now:HH:mm:ss.fff}] Tid: [{Thread.CurrentThread.ManagedThreadId}] CorrelationManager.ActivityId: [{Trace.CorrelationManager.ActivityId}] EventSource.CurrentThreadActivityId {EventSource.CurrentThreadActivityId} {message}";
 
             //    Console.WriteLine(log);
             MyEventSource.Log.Message1(log);
