@@ -6,17 +6,35 @@ namespace ActivityIdSpike
 {
     internal class Program
     {
+        private static ActivitySource source = new ActivitySource("Sample.DistributedTracing", "1.0.0");
+
+
         static async Task Main(string[] args)
         {
 
-            MyEventListener listener = new MyEventListener();
-            Guid id = Guid.NewGuid();
-            
-            EventSource.SetCurrentThreadActivityId(id);
+            MyEventListener myListener = new MyEventListener();
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = (activitySource) => true,  // Enable listening to all activity sources.
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,  // Capture all data.
+                ActivityStarted = activity => Console.WriteLine($"Activity started: {activity.DisplayName}"),
+                ActivityStopped = activity => Console.WriteLine($"Activity stopped: {activity.DisplayName}")
+            };
+            ActivitySource.AddActivityListener(listener);
+            using var activity = source.StartActivity(nameof(Main));
+            // Trace.CorrelationManager.ActivityId = activity.Id;
+            Console.WriteLine($"ActivityId : {activity.Id}");
 
+            Guid id = Guid.NewGuid();
+            Guid id2 = Guid.NewGuid();
+
+            //            Trace.CorrelationManager.ActivityId = id2;
+            //      EventSource.SetCurrentThreadActivityId(id);
             MyEventSource.Log.FooStart("starting ...");
+
             MyEventSource.Log.Message1($"Message1: id: {id}");
             PrintWithHeader("Main started");
+            
 
             await Task.Delay(1000);
             PrintWithHeader("AfterListerStarted");
@@ -27,18 +45,20 @@ namespace ActivityIdSpike
             MyEventSource.Log.FooStop("Stopping");
 
         }
-       static async Task PropagateActivtyIdWithEventSource(int tid)
-       {
+
+        static async Task PropagateActivtyIdWithEventSource(int tid)
+        {
+
             MyEventSource.Log.Message1("Message1");
             PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource started");
-         //   MyEventSource.Log.FooStart($"Child {tid} started");
+            //   MyEventSource.Log.FooStart($"Child {tid} started");
             MyEventSource.Log.Message1("Message1");
             PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource After starting propagation.");
             await Task.Yield();
             MyEventSource.Log.Message1("Message1");
             PrintWithHeader($"[{tid}] PropagateActivtyIdWithEventSource After Yield");
-          //  MyEventSource.Log.FooStop($"Child {tid} stopped");   
-       }
+            //  MyEventSource.Log.FooStop($"Child {tid} stopped");   
+        }
 
 
 
